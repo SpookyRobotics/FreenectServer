@@ -6,18 +6,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class TcpServer {
     private final int mPortNumber;
     private final ServerSocket mSocket;
     private final String mServerName;
-    private int clientsConnected = -1;
-    private final Runnable mListener;
-    private List<Socket> clientSockets = new ArrayList<>();
-    private List<BufferedOutputStream> outputStreams = new ArrayList<>();
-    private List<BufferedReader> inputStreams = new ArrayList<>();
+    private final Consumer<TcpServer> mListener;
+    private Optional<Socket> mClientSocket = Optional.empty();
 
     private final Thread serverThread = new Thread(new java.lang.Runnable() {
         @Override
@@ -27,13 +24,8 @@ public class TcpServer {
                     System.out.println(mServerName + " Waiting for client");
                     Socket clientSocket = mSocket.accept();
                     System.out.println(mServerName + " Client connected");
-                    clientsConnected += 1;
-                    clientSockets.add(clientsConnected, clientSocket);
-                    BufferedOutputStream outputStream = new BufferedOutputStream(clientSocket.getOutputStream(), 25344);
-                    BufferedReader inputReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    outputStreams.add(clientsConnected, outputStream);
-                    inputStreams.add(clientsConnected, inputReader);
-                    mListener.run();
+                    mClientSocket = Optional.of(clientSocket);
+                    mListener.accept(TcpServer.this);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -41,7 +33,9 @@ public class TcpServer {
         }
     });
 
-    public TcpServer(String serverName, int port,Runnable listener) throws IOException {
+    public TcpServer(final String serverName,
+                     final int port,
+                     final Consumer<TcpServer> listener) throws IOException {
         mPortNumber = port;
         mSocket = new ServerSocket(mPortNumber);
         mListener = listener;
@@ -49,10 +43,7 @@ public class TcpServer {
     }
 
     public boolean isConnected(){
-        if(clientSockets.size() > 0){
-            return true;
-        }
-        return false;
+        return mClientSocket.isPresent();
     }
 
     public void start(){
@@ -61,22 +52,16 @@ public class TcpServer {
 
     public void transmit(int[] buffer,int offset,int bytesToWrite){
         if(isConnected()){
-            try {
-                for(int clientIndex = 0; clientIndex < outputStreams.size(); clientIndex++){
-                    BufferedOutputStream client = outputStreams.get(clientIndex);
-                    for(int index = offset; index < offset+bytesToWrite; index++) {
-                        client.write(buffer[index]);
+            mClientSocket.ifPresent((client) -> {
+                try {
+                    BufferedOutputStream output = new BufferedOutputStream(client.getOutputStream(), 25344);
+                    for (int index = offset; index < offset + bytesToWrite; index++) {
+                        output.write(buffer[index]);
                     }
+                } catch (IOException e){
+                    e.printStackTrace();
                 }
-                //System.out.println("Wrote "+bytesToWrite);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            });
         }
-    }
-
-
-    public BufferedOutputStream getClient(int socketIndex) {
-        return outputStreams.get(socketIndex);
     }
 }

@@ -113,7 +113,7 @@ public class CameraManager {
         return mKinect != null ? 1 : 0;
     }
 
-    public void setOnStartListener(Runnable r) {
+    public void addOnStartListener(Runnable r) {
         if(isTerminating){
             mOnStartListeners.add(r);
         }

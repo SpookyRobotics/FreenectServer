@@ -25,7 +25,7 @@ public class TcpClientMain {
     }
 
 
-    public  void start(){
+    public void start(){
         DisplayCanvas[] canvases = DisplayCanvas.initWindow();
         mRgbCanvas = canvases[0];
         Runnable r = () -> startClient(port);
