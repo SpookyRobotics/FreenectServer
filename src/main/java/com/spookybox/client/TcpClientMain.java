@@ -1,6 +1,5 @@
 package com.spookybox.client;
 
-import com.spookybox.camera.CameraSnapShot;
 import com.spookybox.camera.KinectFrame;
 import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.graphics.DisplayCanvas;
@@ -50,9 +49,7 @@ public class TcpClientMain {
                     }
                     read = inputStream.read(buffer);
                 }
-                CameraSnapShot cameraSnapshot = CameraSnapShot.byteListToCameraSnapShot(bufferList);
                 System.out.println("Read image "+System.currentTimeMillis());
-                drawImage(cameraSnapshot);
                 bufferList.clear();
             }
         } catch (UnknownHostException e) {
@@ -61,13 +58,5 @@ public class TcpClientMain {
             e.printStackTrace();
         }
     }
-
-    private void drawImage(CameraSnapShot cameraSnapShot){
-        KinectFrame frame1 = cameraSnapShot.mRgbFrames.get(0);
-        KinectFrame frame2 = cameraSnapShot.mRgbFrames.get(1);
-        mRgbCanvas.setImage(ByteBufferToImage.rgbFramesToImage(frame1, frame2));
-    }
-
-
 
 }

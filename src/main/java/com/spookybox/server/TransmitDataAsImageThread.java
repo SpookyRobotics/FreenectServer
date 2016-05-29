@@ -1,14 +1,10 @@
 package com.spookybox.server;
 
-import com.spookybox.camera.CameraSnapShot;
-import com.spookybox.camera.KinectFrame;
-import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.util.ThreadUtils;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 public class TransmitDataAsImageThread<T> extends Thread{

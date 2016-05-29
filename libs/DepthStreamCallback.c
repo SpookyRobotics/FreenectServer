@@ -20,7 +20,8 @@ JNIEXPORT void JNICALL Java_com_spookybox_freenect_DepthStreamCallback_depthCall
         printf("Invalid t_gamma"); fflush(stdout);
         return;
     }
-    else if(depthStream == NULL) {
+    else if(depthSt
+    ream == NULL) {
         printf("Invalid depth stream."); fflush(stdout);
         return;
     }
@@ -28,7 +29,6 @@ JNIEXPORT void JNICALL Java_com_spookybox_freenect_DepthStreamCallback_depthCall
         printf("Invalid rgb stream."); fflush(stdout);
         return;
     }
-    printf("Converting"); fflush(stdout);
     depth_cb(t_gamma, depthStream, rgbStream);
 }
 
@@ -37,7 +37,8 @@ JNIEXPORT void JNICALL Java_com_spookybox_freenect_DepthStreamCallback_depthCall
  * Method:    initGammaArray
  * Signature: ()Ljava/nio/ByteBuffer;
  */
-JNIEXPORT void JNICALL Java_com_spookybox_freenect_DepthStreamCallback_initGammaArray(JNIEnv * env, jclass thiz, jobject buffer) {
+JNIEXPORT     printf("Converting"); fflush(stdout);
+void JNICALL Java_com_spookybox_freenect_DepthStreamCallback_initGammaArray(JNIEnv * env, jclass thiz, jobject buffer) {
     uint16_t* t_gamma = (uint16_t*) env->GetDirectBufferAddress(buffer);
     int i;
     for (i=0; i<2048; i++) {

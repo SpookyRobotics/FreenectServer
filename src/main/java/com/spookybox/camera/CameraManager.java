@@ -2,7 +2,6 @@ package com.spookybox.camera;
 
 import com.spookybox.util.SelectiveReceiver;
 import com.spookybox.util.ThreadUtils;
-import com.spookybox.util.SerializationUtils;
 import org.openkinect.freenect.*;
 
 import java.lang.management.ManagementFactory;
@@ -10,19 +9,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import static com.spookybox.util.ThreadUtils.sleep;
 
 public class CameraManager {
     private final Device mKinect;
-    private final ConcurrentLinkedQueue<KinectFrame> mRecentDepthFrames;
-    private final ConcurrentLinkedQueue<KinectFrame> mRecentRgbFrames;
     private boolean isTerminating = true;
     private Optional<Thread> mDepthThread = Optional.empty();
     private Optional<Thread> mRgbThread = Optional.empty();
     private Optional<Thread> mConsumerThread = Optional.empty();
-    private List<SelectiveReceiver<CameraSnapShot>> receiverList = new ArrayList<>();
     private List<Runnable> mOnStartListeners = new ArrayList<>();
 
 
@@ -31,63 +27,18 @@ public class CameraManager {
             throw new IllegalArgumentException("Kinect is null");
         }
         mKinect = kinect;
-        mRecentDepthFrames = new ConcurrentLinkedQueue<>();
-        mRecentRgbFrames = new ConcurrentLinkedQueue<>();
         stop();
     }
 
-    public void startCapture(){
+    public void startCapture(Consumer<KinectFrame> rgbReceiver, Consumer<KinectFrame> depthReceiver){
         isTerminating = false;
-        startDepthCapture();
-        startRgbCapture();
-        startConsumer();
+        startDepthCapture(depthReceiver);
+        startRgbCapture(rgbReceiver);
         mOnStartListeners.forEach(Runnable::run);
         mOnStartListeners.clear();
     }
 
-    public void registerSnapshotReceiver(SelectiveReceiver<CameraSnapShot> selectiveReceiver){
-        receiverList.add(selectiveReceiver);
-    }
-
-    private void startConsumer() {
-        mConsumerThread = Optional.of(new Thread(() -> {
-            while(!isTerminating) {
-                try {
-                    Thread.sleep(500);
-                    receiveFrames();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }));
-        mConsumerThread.get().start();
-    }
-
-    private void receiveFrames() {
-        if(mRecentDepthFrames.isEmpty() || mRecentRgbFrames.isEmpty()){
-            return;
-        }
-        KinectFrame[] typeParameter = new KinectFrame[0];
-        List<KinectFrame> depthFrames =  Arrays.asList(mRecentDepthFrames.toArray(typeParameter));
-        List<KinectFrame> rgbFrames = Arrays.asList(mRecentRgbFrames.toArray(typeParameter));
-        mRecentRgbFrames.clear();
-        mRecentDepthFrames.clear();
-        System.out.println("Depth ["+depthFrames.size() +"] - Video [" + rgbFrames.size() + "] @"+ getUptime());
-        CameraSnapShot snapShot = new CameraSnapShot(rgbFrames, depthFrames);
-        for(SelectiveReceiver<CameraSnapShot> receiver : receiverList){
-            if(receiver.mPredicate.test(snapShot)){
-                receiver.mReceiver.accept(snapShot);
-            }
-        }
-    }
-
-    public static long getUptime() {
-        return ManagementFactory.getRuntimeMXBean().getUptime();
-    }
-
-
-    private void startRgbCapture() {
+    private void startRgbCapture(final Consumer<KinectFrame> callback) {
         Object awaitStart = new Object();
         mKinect.setVideoFormat(VideoFormat.RGB, Resolution.MEDIUM);
         mRgbThread = Optional.of(new Thread(() -> {
@@ -95,7 +46,7 @@ public class CameraManager {
                 if(isTerminating || frame == null){
                     return;
                 }
-                mRecentRgbFrames.add(new KinectFrame(false, mode, frame, timestamp));
+                callback.accept(new KinectFrame(false, mode, frame, timestamp));
             };
             while(!(mKinect.startVideo(receiver) == 0)){
                 System.out.println("Restarting depth");
@@ -107,7 +58,7 @@ public class CameraManager {
         waitOnObject(awaitStart);
     }
 
-    private void startDepthCapture() {
+    private void startDepthCapture(final Consumer<KinectFrame> depthConsumer) {
         Object awaitStart = new Object();
         mKinect.setDepthFormat(DepthFormat.D11BIT);
         mDepthThread = Optional.of(new Thread(() -> {
@@ -115,7 +66,7 @@ public class CameraManager {
                 if(isTerminating || frame == null){
                     return;
                 }
-                mRecentDepthFrames.add(new KinectFrame(true, mode, frame, timestamp));
+                depthConsumer.accept(new KinectFrame(true, mode, frame, timestamp));
             };
             while(!(mKinect.startDepth(receiver) == 0)){
                 System.out.println("Restarting depth");
@@ -163,7 +114,7 @@ public class CameraManager {
     }
 
     public void setOnStartListener(Runnable r) {
-        if(isTerminating == true){
+        if(isTerminating){
             mOnStartListeners.add(r);
         }
         else{

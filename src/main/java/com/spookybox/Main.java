@@ -4,11 +4,7 @@ import com.spookybox.applications.*;
 
 public class Main {
 
-    private static ApplicationInstance instance =
-            //new RecordFramesApplication();
-            //new TestCameraManagerApplication();
-            //new DisplayRecordedInputApplication();
-            new DisplayCamera();
+    private static ApplicationInstance instance = new DisplayCamera();
 
     public static void main(String[] args){
         System.out.println("-- Application Start --");

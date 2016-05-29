@@ -1,7 +1,6 @@
 package com.spookybox.server;
 
 import com.spookybox.camera.CameraManager;
-import com.spookybox.camera.CameraSnapShot;
 import com.spookybox.camera.KinectFrame;
 import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.util.Pair;
@@ -38,43 +37,12 @@ public class SnapShotTransmitThread extends Thread {
         readyToStart = controller != null && cameraManager != null && rgbServer!= null;
     }
 
-    private SelectiveReceiver<CameraSnapShot> getRgbReceiver(){
-        return new SelectiveReceiver<>(
-                snapShot -> {
-                    startRgbTransmitThread();
-                    mRgbTransmitThread.queueData(
-                            new Pair<>(
-                                    snapShot.mRgbFrames.get(0),
-                                    snapShot.mRgbFrames.get(1)
-                            ));
-                },
-                snapShot -> mRgbServer.isConnected() && snapShot.mRgbFrames.size() > 1
-        );
-    }
-
-    private SelectiveReceiver<CameraSnapShot> getDepthReceiver(){
-        return new SelectiveReceiver<>(
-                snapShot -> {
-                    startDepthTransmitThread();
-                    mDepthTransmitThread.queueData(
-                            new Pair<>(
-                                    snapShot.mDepthFrames.get(0),
-                                    snapShot.mDepthFrames.get(1)
-                            ));
-                },
-                snapShot -> mRgbServer.isConnected() && snapShot.mDepthFrames.size() > 1
-        );
-    }
 
     @Override
     public void run(){
         System.out.println(getName() + " Started");
         mRgbTransmitThread = new TransmitDataAsImageThread(mRgbServer, mController, mThreadNumber * 100, getKinectFrameConverter());
         mDepthTransmitThread = new TransmitDataAsImageThread(mDepthServer, mController, mThreadNumber * 100, getKinectFrameConverter());
-
-        mCameraManager.registerSnapshotReceiver(getRgbReceiver());
-
-        mCameraManager.registerSnapshotReceiver(getDepthReceiver());
     }
 
     private void startRgbTransmitThread() {

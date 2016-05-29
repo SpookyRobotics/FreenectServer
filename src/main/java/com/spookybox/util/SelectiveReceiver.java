@@ -1,7 +1,5 @@
 package com.spookybox.util;
 
-import com.spookybox.camera.CameraSnapShot;
-
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
