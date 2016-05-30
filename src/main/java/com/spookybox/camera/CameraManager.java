@@ -1,5 +1,6 @@
 package com.spookybox.camera;
 
+import com.spookybox.tilt.TiltManager;
 import com.spookybox.util.SelectiveReceiver;
 import com.spookybox.util.ThreadUtils;
 import org.openkinect.freenect.*;
@@ -15,6 +16,7 @@ import static com.spookybox.util.ThreadUtils.sleep;
 
 public class CameraManager {
     private final Device mKinect;
+    private final TiltManager mTiltManager;
     private boolean isTerminating = true;
     private Optional<Thread> mDepthThread = Optional.empty();
     private Optional<Thread> mRgbThread = Optional.empty();
@@ -27,7 +29,12 @@ public class CameraManager {
             throw new IllegalArgumentException("Kinect is null");
         }
         mKinect = kinect;
+        mTiltManager = new TiltManager(mKinect);
         stop();
+    }
+
+    public void setTilt(int degrees){
+        mTiltManager.moveAndWait(degrees);
     }
 
     public void startCapture(Consumer<KinectFrame> rgbReceiver, Consumer<KinectFrame> depthReceiver){
@@ -120,5 +127,9 @@ public class CameraManager {
         else{
             r.run();
         }
+    }
+
+    public int getTilt() {
+        return (int) mTiltManager.getTiltAngle();
     }
 }
