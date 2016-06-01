@@ -1,6 +1,7 @@
 package com.spookybox.frameConsumers;
 
 import com.spookybox.applications.KinectFrameConsumer;
+import com.spookybox.camera.KinectFrame;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -53,7 +54,7 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
         synchronized (mWriteLock){
             String data = toArffData(arffData);
             mOutputStream.print(data);
-            if(!arffData.isDepth){
+            if(!arffData.mIsDepth){
                 mWroteRgb += 1;
                 if(mWroteRgb >= 30){
                     mWroteRgb = 0;
@@ -65,17 +66,17 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
 
     private String toArffData(ArffData arffData) {
         StringBuilder out = new StringBuilder();
-        if(arffData.isDepth){
+        if(arffData.mIsDepth){
             out.append("depth_frame");
         } else {
             out.append("rgb_frame");
         }
         out.append(",");
-        out.append(arffData.timestamp).append(",");
-        for(int heightIndex = 0; heightIndex < arffData.inputPanels.length; heightIndex++){
-            for(int widthIndex = 0; widthIndex < arffData.inputPanels[0].length; widthIndex++){
-                out.append(arffData.inputPanels[heightIndex][widthIndex]);
-                if(widthIndex + 1 != arffData.inputPanels[0].length){
+        out.append(arffData.mTimestamp).append(",");
+        for(int heightIndex = 0; heightIndex < arffData.mInputPanels.length; heightIndex++){
+            for(int widthIndex = 0; widthIndex < arffData.mInputPanels[0].length; widthIndex++){
+                out.append(arffData.mInputPanels[heightIndex][widthIndex]);
+                if(widthIndex + 1 != arffData.mInputPanels[0].length){
                     out.append(",");
                 }
             }
@@ -141,6 +142,16 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
     }
 
     @Override
+    public ArffData transformDepth(KinectFrame frame) {
+        return new ArffData(frame);
+    }
+
+    @Override
+    protected ArffData transformRgb(KinectFrame frame) {
+        return new ArffData(frame);
+    }
+
+    @Override
     protected Consumer<ArffData> getRgbConsumer() {
         return mRgbConsumer;
     }
@@ -176,7 +187,7 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
     private static String getAttributes() {
         StringBuilder attributeList = new StringBuilder();
         attributeList.append("@ATTRIBUTE class  {rgb_frame,depth_frame}\n");
-        attributeList.append("@ATTRIBUTE timestamp   NUMERIC\n");
+        attributeList.append("@ATTRIBUTE mTimestamp   NUMERIC\n");
         for(int index = 0; index < 640*480; index++){
             attributeList.append("@ATTRIBUTE red"+index+" NUMERIC\n");
             attributeList.append("@ATTRIBUTE green"+index+" NUMERIC\n");

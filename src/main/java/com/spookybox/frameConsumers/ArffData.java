@@ -1,17 +1,20 @@
 package com.spookybox.frameConsumers;
 
+import com.spookybox.camera.KinectFrame;
+import com.spookybox.graphics.ByteBufferToImage;
+
 import java.awt.image.BufferedImage;
 
 public class ArffData {
     private static final int PANEL_INPUT_HEIGHT = 2;
     private static final int PANEL_INPUT_WIDTH = 3;
-    public final int timestamp;
-    public final boolean isDepth;
-    public final Pixel[][] inputPanels = new Pixel[PANEL_INPUT_HEIGHT][PANEL_INPUT_WIDTH];
+    public final int mTimestamp;
+    public final boolean mIsDepth;
+    public final Pixel[][] mInputPanels = new Pixel[PANEL_INPUT_HEIGHT][PANEL_INPUT_WIDTH];
 
     public ArffData(int timestamp, boolean isDepth, BufferedImage image) {
-        this.timestamp = timestamp;
-        this.isDepth = isDepth;
+        mTimestamp = timestamp;
+        mIsDepth = isDepth;
         int panelPixelWidth = image.getWidth() / PANEL_INPUT_WIDTH;
         int panelPixelHeight = image.getHeight() / PANEL_INPUT_HEIGHT;
         for(int heightIndex = 0; heightIndex < PANEL_INPUT_HEIGHT; heightIndex++){
@@ -21,10 +24,20 @@ public class ArffData {
                         heightIndex * panelPixelHeight,
                         panelPixelWidth,
                         panelPixelHeight);
-                inputPanels[heightIndex][widthIndex] = imageToPixel(subImage);
+                mInputPanels[heightIndex][widthIndex] = imageToPixel(subImage);
             }
         }
 
+    }
+
+    public ArffData(KinectFrame frame) {
+        this(
+            frame.getTimestamp(),
+            frame.isDepthFrame(),
+            ByteBufferToImage.byteArrayToImage(
+                    frame.getBuffer().array()
+            )
+        );
     }
 
     private Pixel imageToPixel(BufferedImage subImage) {

@@ -49,18 +49,33 @@ public class DisplayCamera extends DefaultInstance {
             int bytesPerPixel = 3;
             ByteBuffer rgbResult = ByteBuffer.allocateDirect(bytesPerPixel * SCREEN_RESOLUTION);
             mDepthStreamCallback.depthCallback(kinectFrame.getBuffer(), rgbResult);
+
+            KinectFrame rgbFrame = new KinectFrame(
+                    kinectFrame.isDepthFrame(),
+                    kinectFrame.getMode(),
+                    buildArrayBackedBuffer(rgbResult),
+                    kinectFrame.getTimestamp()
+            );
+
             byte[] bytes = new byte[rgbResult.capacity()];
             for(int index = 0; index < bytes.length; index++){
                 bytes[index] = rgbResult.get(index);
             }
             BufferedImage image = ByteBufferToImage.byteArrayToImage(bytes);
-            ArffData arffData = new ArffData(kinectFrame.getTimestamp(), true, image);
             for(KinectFrameConsumer c : mKinectFrameConsumers){
-                c.acceptDepth(arffData);
+                c.acceptDepth(rgbFrame);
             }
             mDepthCanvas.setImage(image);
             mDepthCanvas.repaint();
         });
+    }
+
+    private static ByteBuffer buildArrayBackedBuffer(ByteBuffer buffer) {
+        byte[] bytes = new byte[buffer.capacity()];
+        for(int index = 0; index < bytes.length; index++){
+            bytes[index] = buffer.get(index);
+        }
+        return ByteBuffer.wrap(bytes);
     }
 
     private KinectFrame rgbFirstFrame = null;
@@ -69,25 +84,36 @@ public class DisplayCamera extends DefaultInstance {
             if(rgbFirstFrame == null){
                 rgbFirstFrame = kinectFrame;
             } else {
-                byte[] bytes = new byte[rgbFirstFrame.getBuffer().capacity() + kinectFrame.getBuffer().capacity()];
-                int resultIndex = 0;
-                for(int frameIndex = 0; frameIndex < rgbFirstFrame.getBuffer().capacity(); frameIndex++){
-                    bytes[resultIndex] = rgbFirstFrame.getBuffer().get(frameIndex);
-                    resultIndex++;
-                }
-                for(int frameIndex = 0; frameIndex < kinectFrame.getBuffer().capacity(); frameIndex++){
-                    bytes[resultIndex] = kinectFrame.getBuffer().get(frameIndex);
-                    resultIndex++;
-                }
-                BufferedImage image = ByteBufferToImage.byteArrayToImage(bytes);
-                ArffData arffData = new ArffData(kinectFrame.getTimestamp(), false, image);
+                KinectFrame rgbFrame = buildRgbFrame(rgbFirstFrame, kinectFrame);
                 for(KinectFrameConsumer c : mKinectFrameConsumers){
-                    c.acceptRgb(arffData);
+                    c.acceptRgb(rgbFrame);
                 }
                 rgbFirstFrame = null;
+                BufferedImage image = ByteBufferToImage.byteArrayToImage(rgbFrame.getBuffer().array());
                 mRgbCanvas.setImage(image);
                 mRgbCanvas.repaint();
             }
         });
+    }
+
+    private ByteBuffer zipBuffers(ByteBuffer first, ByteBuffer second){
+        byte[] bytes = new byte[first.capacity() + second.capacity()];
+        int resultIndex = 0;
+        for(int frameIndex = 0; frameIndex < first.capacity(); frameIndex++){
+            bytes[resultIndex] = first.get(frameIndex);
+            resultIndex++;
+        }
+        for(int frameIndex = 0; frameIndex < second.capacity(); frameIndex++){
+            bytes[resultIndex] = second.get(frameIndex);
+            resultIndex++;
+        }
+        return ByteBuffer.wrap(bytes);
+    }
+    private KinectFrame buildRgbFrame(KinectFrame firstFrame, KinectFrame secondFrame) {
+        if(firstFrame.isDepthFrame() || secondFrame.isDepthFrame()){
+            throw new IllegalArgumentException("Must have two rgb frames");
+        }
+        ByteBuffer buffer = zipBuffers(firstFrame.getBuffer(), secondFrame.getBuffer());
+        return new KinectFrame(false, firstFrame.getMode(), buffer, firstFrame.getTimestamp());
     }
 }
