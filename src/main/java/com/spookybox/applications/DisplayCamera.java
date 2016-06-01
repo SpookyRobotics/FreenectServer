@@ -1,19 +1,16 @@
 package com.spookybox.applications;
 
 import com.spookybox.frameConsumers.ArffCreator;
+import com.spookybox.frameConsumers.ArffData;
 import com.spookybox.freenect.DepthStreamCallback;
 import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.graphics.DisplayCanvas;
 import com.spookybox.camera.KinectFrame;
 import com.spookybox.inputManager.ConsoleInput;
-import com.spookybox.util.ThreadUtils;
 
 import java.awt.image.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 import static com.spookybox.graphics.ByteBufferToImage.SCREEN_RESOLUTION;

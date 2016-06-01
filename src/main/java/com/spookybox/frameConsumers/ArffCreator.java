@@ -1,6 +1,5 @@
 package com.spookybox.frameConsumers;
 
-import com.spookybox.applications.ArffData;
 import com.spookybox.applications.KinectFrameConsumer;
 
 import java.awt.image.BufferedImage;
@@ -9,28 +8,48 @@ import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class ArffCreator extends KinectFrameConsumer<ArffData> {
+    private final String mFileName;
     private PrintWriter mOutputStream;
     private Consumer<ArffData> mDepthConsumer;
     private Consumer<ArffData> mRgbConsumer;
     private int mFileIndex = 0;
     private int mWroteRgb = 0;
     private final Object mWriteLock = new Object();
+    private ExecutorService mExecutor;
+
     public ArffCreator(){
-        mOutputStream = getOutputStream();
-        mOutputStream.print(getArffDataHeader());
+        mFileName = getDefaultSaveFile();
+        init();
+    }
+
+    public ArffCreator(String filename){
+        mFileName = filename;
+        init();
+    }
+
+    private void init(){
+        mOutputStream = getOutputStream(mFileName);
+        queueExecution(() -> mOutputStream.print(getArffDataHeader()));
         mDepthConsumer = arffData -> {
-            writeArffData(arffData);
+            queueExecution(() -> writeArffData(arffData));
         };
         mRgbConsumer = arffData -> {
-            writeArffData(arffData);
+            queueExecution(() -> writeArffData(arffData));
         };
     }
 
+    private void queueExecution(Runnable runnable){
+        if(mExecutor == null){
+            mExecutor = Executors.newFixedThreadPool(1);
+        }
+        mExecutor.submit(runnable);
+    }
     private void writeArffData(ArffData arffData) {
-        if(true) return;
         synchronized (mWriteLock){
             String data = toArffData(arffData);
             mOutputStream.print(data);
@@ -38,14 +57,14 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
                 mWroteRgb += 1;
                 if(mWroteRgb >= 30){
                     mWroteRgb = 0;
-                    mOutputStream = getOutputStream();
+                    mOutputStream = getOutputStream(mFileName);
                 }
             }
         }
     }
 
     private String toArffData(ArffData arffData) {
-        StringBuffer out = new StringBuffer();
+        StringBuilder out = new StringBuilder();
         if(arffData.isDepth){
             out.append("depth_frame");
         } else {
@@ -53,31 +72,39 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
         }
         out.append(",");
         out.append(arffData.timestamp).append(",");
-        out.append(imageToString(arffData.image));
+        for(int heightIndex = 0; heightIndex < arffData.inputPanels.length; heightIndex++){
+            for(int widthIndex = 0; widthIndex < arffData.inputPanels[0].length; widthIndex++){
+                out.append(arffData.inputPanels[heightIndex][widthIndex]);
+                if(widthIndex + 1 != arffData.inputPanels[0].length){
+                    out.append(",");
+                }
+            }
+        }
+        out.append("\n");
         return out.toString();
     }
 
-    private PrintWriter getOutputStream() {
+    private PrintWriter getOutputStream(String fileName) {
         try {
-            return new PrintWriter(new FileOutputStream(getSaveFile()));
+            return new PrintWriter(new FileOutputStream(fileName));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
         throw new IllegalArgumentException("Invalid state");
     }
 
-    public String getSaveFile() {
-        StringBuffer name = new StringBuffer();
+    public String getDefaultSaveFile() {
+        StringBuilder name = new StringBuilder();
         String fileName = new SimpleDateFormat("MM_dd_HH_mm").format(new Date());
         name.append(fileName);
         name.append("_index").append(mFileIndex);
         mFileIndex += 1;
-        name.append(".kinect_arff");
+        name.append(".kinect.arff");
         return name.toString();
     }
 
-    private String getArffDataHeader() {
-        StringBuffer out = new StringBuffer();
+    public String getArffDataHeader() {
+        StringBuilder out = new StringBuilder();
         out.append(getRelation());
         out.append(getAttributes());
         out.append("@DATA\n");
@@ -87,7 +114,7 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
     private String imageToString(BufferedImage image) {
         int[] array = new int[640*480];
         image.getRGB(0,0,640,480,array,0,640);
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for(int index = 0; index < array.length; index++){
             result.append(array[index]).append(",");
         }
@@ -124,11 +151,15 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
     }
 
     public String getRelation() {
-        return "@RELATION hadukan\n\n";
+        StringBuilder out = new StringBuilder();
+        out.append("@RELATION");
+        out.append(" hadukan");
+        out.append("\n");
+        return out.toString();
     }
 
     private String getWekaFrame(ByteBuffer buffer, boolean isDepthFrame, int timestamp) {
-        StringBuffer data = new StringBuffer();
+        StringBuilder data = new StringBuilder();
         for(int index = 0; index < buffer.capacity(); index++) {
             data.append(buffer.get(index)).append(",");
         }
@@ -142,8 +173,8 @@ public class ArffCreator extends KinectFrameConsumer<ArffData> {
         return data.toString();
     }
 
-    public String getAttributes() {
-        StringBuffer attributeList = new StringBuffer();
+    private static String getAttributes() {
+        StringBuilder attributeList = new StringBuilder();
         attributeList.append("@ATTRIBUTE class  {rgb_frame,depth_frame}\n");
         attributeList.append("@ATTRIBUTE timestamp   NUMERIC\n");
         for(int index = 0; index < 640*480; index++){

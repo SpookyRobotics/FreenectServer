@@ -1,7 +1,5 @@
 package com.spookybox.freenect;
 
-import com.spookybox.camera.KinectFrame;
-
 import java.nio.ByteBuffer;
 
 public class DepthStreamCallback {
