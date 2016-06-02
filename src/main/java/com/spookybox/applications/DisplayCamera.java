@@ -16,14 +16,14 @@ import java.util.function.Consumer;
 import static com.spookybox.graphics.ByteBufferToImage.SCREEN_RESOLUTION;
 
 public class DisplayCamera extends DefaultInstance {
+    private final KinectFrameConsumerThread mConsumerThread;
     private DisplayCanvas mRgbCanvas;
     private DisplayCanvas mDepthCanvas;
     private DepthStreamCallback mDepthStreamCallback;
-    private final ArrayList<KinectFrameConsumer<ArffData>> mKinectFrameConsumers;
 
     public DisplayCamera(){
         mDepthStreamCallback = new DepthStreamCallback();
-        mKinectFrameConsumers = new ArrayList<>();
+        mConsumerThread = new KinectFrameConsumerThread();
     }
 
     @Override
@@ -39,8 +39,9 @@ public class DisplayCamera extends DefaultInstance {
         input.startInputLoop();
     }
 
+
     private void addArrfCreator() {
-        mKinectFrameConsumers.add(new ArffCreator());
+        mConsumerThread.add(new ArffCreator());
     }
 
 
@@ -61,10 +62,8 @@ public class DisplayCamera extends DefaultInstance {
             for(int index = 0; index < bytes.length; index++){
                 bytes[index] = rgbResult.get(index);
             }
+            //mConsumerThread.queueDepth(rgbFrame);
             BufferedImage image = ByteBufferToImage.byteArrayToImage(bytes);
-            for(KinectFrameConsumer c : mKinectFrameConsumers){
-                c.acceptDepth(rgbFrame);
-            }
             mDepthCanvas.setImage(image);
             mDepthCanvas.repaint();
         });
@@ -85,10 +84,8 @@ public class DisplayCamera extends DefaultInstance {
                 rgbFirstFrame = kinectFrame;
             } else {
                 KinectFrame rgbFrame = buildRgbFrame(rgbFirstFrame, kinectFrame);
-                for(KinectFrameConsumer c : mKinectFrameConsumers){
-                    c.acceptRgb(rgbFrame);
-                }
                 rgbFirstFrame = null;
+                //mConsumerThread.queueRgb(rgbFrame);
                 BufferedImage image = ByteBufferToImage.byteArrayToImage(rgbFrame.getBuffer().array());
                 mRgbCanvas.setImage(image);
                 mRgbCanvas.repaint();
