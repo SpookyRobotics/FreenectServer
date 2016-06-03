@@ -29,13 +29,15 @@ public class KinectFrameConsumerThread {
         mRgbExecutor.submit(() -> dispatchRgbFrame(rgb));
     }
 
-    private void dispatchDepthFrame(final  KinectFrame depthFrame){
-        mDepthExecutor.submit(() -> dispatchDepthFrame(depthFrame));
+    private void dispatchDepthFrame(final KinectFrame depthFrame){
+        for(KinectFrameConsumer c : mKinectFrameConsumers){
+            c.acceptDepth(depthFrame);
+        }
     }
 
     private void dispatchRgbFrame(final KinectFrame rgbFrame){
         for(KinectFrameConsumer c : mKinectFrameConsumers){
-            c.acceptDepth(rgbFrame);
+            c.acceptRgb(rgbFrame);
         }
     }
     public void add(KinectFrameConsumer consumer) {

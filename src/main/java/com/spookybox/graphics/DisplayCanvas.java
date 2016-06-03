@@ -28,15 +28,17 @@ public class DisplayCanvas extends Component {
     public static DisplayCanvas[] initWindow() {
         DisplayCanvas rgbCanvas = new DisplayCanvas();
         DisplayCanvas depthCanvas = new DisplayCanvas();
+        DisplayCanvas auxCanvas = new DisplayCanvas();
         JFrame window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setBounds(30, 30, 640, 480);
         JPanel contentPane = new JPanel(new GridLayout(0, 2));
         contentPane.add(rgbCanvas);
         contentPane.add(depthCanvas);
+        contentPane.add(auxCanvas);
         window.setContentPane(contentPane);
         window.setVisible(true);
-        DisplayCanvas[] result =  {rgbCanvas, depthCanvas};
+        DisplayCanvas[] result =  {rgbCanvas, depthCanvas, auxCanvas};
         return result;
     }
 }

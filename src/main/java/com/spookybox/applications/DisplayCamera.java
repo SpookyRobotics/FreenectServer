@@ -2,6 +2,7 @@ package com.spookybox.applications;
 
 import com.spookybox.frameConsumers.ArffCreator;
 import com.spookybox.frameConsumers.ArffData;
+import com.spookybox.frameConsumers.Downscaler;
 import com.spookybox.freenect.DepthStreamCallback;
 import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.graphics.DisplayCanvas;
@@ -20,6 +21,7 @@ public class DisplayCamera extends DefaultInstance {
     private DisplayCanvas mRgbCanvas;
     private DisplayCanvas mDepthCanvas;
     private DepthStreamCallback mDepthStreamCallback;
+    private DisplayCanvas mAuxCanvas;
 
     public DisplayCamera(){
         mDepthStreamCallback = new DepthStreamCallback();
@@ -31,7 +33,8 @@ public class DisplayCamera extends DefaultInstance {
         DisplayCanvas[] canvases = DisplayCanvas.initWindow();
         mRgbCanvas = canvases[0];
         mDepthCanvas = canvases[1];
-        addArrfCreator();
+        mAuxCanvas = canvases[2];
+        addDownscaleConsumer();
         mCameraManager.startCapture(displayRgbImage(), displayDepthImage());
         ConsoleInput input = new ConsoleInput();
         input.setOnButtonA(() -> mCameraManager.setTilt(mCameraManager.getTilt() + 10));
@@ -39,7 +42,20 @@ public class DisplayCamera extends DefaultInstance {
         input.startInputLoop();
     }
 
-
+    private void addDownscaleConsumer(){
+        int panelsPerRow = 3;
+        int numberOfRows = 2;
+        mConsumerThread.add(
+            new Downscaler(
+                    image -> {
+                        mAuxCanvas.setImage(image);
+                        mAuxCanvas.repaint();
+                    },
+                    panelsPerRow,
+                    numberOfRows
+            )
+        );
+    }
     private void addArrfCreator() {
         mConsumerThread.add(new ArffCreator());
     }
@@ -62,7 +78,7 @@ public class DisplayCamera extends DefaultInstance {
             for(int index = 0; index < bytes.length; index++){
                 bytes[index] = rgbResult.get(index);
             }
-            //mConsumerThread.queueDepth(rgbFrame);
+            mConsumerThread.queueDepth(rgbFrame);
             BufferedImage image = ByteBufferToImage.byteArrayToImage(bytes);
             mDepthCanvas.setImage(image);
             mDepthCanvas.repaint();
@@ -85,7 +101,7 @@ public class DisplayCamera extends DefaultInstance {
             } else {
                 KinectFrame rgbFrame = buildRgbFrame(rgbFirstFrame, kinectFrame);
                 rgbFirstFrame = null;
-                //mConsumerThread.queueRgb(rgbFrame);
+                mConsumerThread.queueRgb(rgbFrame);
                 BufferedImage image = ByteBufferToImage.byteArrayToImage(rgbFrame.getBuffer().array());
                 mRgbCanvas.setImage(image);
                 mRgbCanvas.repaint();
