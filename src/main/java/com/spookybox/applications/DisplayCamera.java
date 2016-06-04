@@ -43,8 +43,8 @@ public class DisplayCamera extends DefaultInstance {
     }
 
     private void addDownscaleConsumer(){
-        int panelsPerRow = 3;
-        int numberOfRows = 2;
+        int panelsPerRow = 100;
+        int numberOfRows = 100;
         mConsumerThread.add(
             new Downscaler(
                     image -> {

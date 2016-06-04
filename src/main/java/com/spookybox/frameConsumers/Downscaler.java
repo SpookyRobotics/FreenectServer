@@ -5,7 +5,7 @@ import com.spookybox.camera.KinectFrame;
 import com.spookybox.graphics.ByteBufferToImage;
 
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
+import java.awt.image.DirectColorModel;
 import java.util.function.Consumer;
 
 public class Downscaler extends KinectFrameConsumer<BufferedImage> {
@@ -26,26 +26,32 @@ public class Downscaler extends KinectFrameConsumer<BufferedImage> {
     }
 
     private synchronized BufferedImage downScale(final BufferedImage image) {
-        InputPanelImage testImage = InputPanel.splitIntoPanels(image, mPanelsPerRow, mNumberOfRows);
-        return InputPanel.stichPanelsToImage(testImage);
+        InputPanelImage inputPanelImage = InputPanel.splitIntoPanels(image, mPanelsPerRow, mNumberOfRows);
+        for(InputPanel p : inputPanelImage.panels){
+            averageRgbColor(p);
+        }
+        return InputPanel.stichPanelsToImage(inputPanelImage);
     }
 
-    private Pixel getAverageRgbColor(final InputPanel panel) {
+    private void averageRgbColor(final InputPanel panel) {
 
-        int averageRed = 0;
-        int averageGreen = 0;
-        int averageBlue = 0;
+        DirectColorModel colorModel = new DirectColorModel(24, 0x00FF0000, 0x0000FF00, 0x000000FF);
+        double averageRed = 0;
+        double averageGreen = 0;
+        double averageBlue = 0;
         int[] image = panel.image;
         for( int index = 0; index < image.length; index++){
-            averageRed += Pixel.getRed(image[index]);
-            averageGreen += Pixel.getGreen(image[index]);
-            averageBlue += Pixel.getBlue(image[index]);
+            averageRed += colorModel.getRed(image[index]);
+            averageGreen += colorModel.getGreen(image[index]);
+            averageBlue += colorModel.getBlue(image[index]);
         }
 
-        byte red = (byte) (averageRed / image.length);
-        byte green = (byte) (averageGreen / image.length);
-        byte blue = (byte) (averageBlue / image.length);
-        return new Pixel(red, green, blue);
+        byte red = (byte) ((averageRed / image.length) / 3);
+        byte green = (byte) ((averageGreen / image.length) / 3);
+        byte blue = (byte) ((averageBlue / image.length) / 3);
+        for(int index = 0; index < image.length; index++){
+            image[index] = 0xFF << 24 | red << 16 | green << 8 | blue;
+        }
     }
 
     @Override
