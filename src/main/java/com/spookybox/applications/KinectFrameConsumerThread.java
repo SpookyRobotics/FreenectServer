@@ -22,11 +22,13 @@ public class KinectFrameConsumerThread {
     }
 
     public void queueDepth(final KinectFrame depth){
-        mDepthExecutor.submit(() -> dispatchDepthFrame(depth));
+        dispatchDepthFrame(depth);
+        //mDepthExecutor.submit(() -> dispatchDepthFrame(depth));
     }
 
     public void queueRgb(final KinectFrame rgb){
-        mRgbExecutor.submit(() -> dispatchRgbFrame(rgb));
+        dispatchRgbFrame(rgb);
+        //mRgbExecutor.submit(() -> dispatchRgbFrame(rgb));
     }
 
     private void dispatchDepthFrame(final KinectFrame depthFrame){

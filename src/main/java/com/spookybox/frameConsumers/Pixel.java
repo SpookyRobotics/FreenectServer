@@ -19,15 +19,15 @@ public class Pixel {
         return 0xFF000000 |  (red << 16 | green << 8 | blue);
     }
 
-    public static int getRed(int rgb) {
-        return (rgb & RED_MASK) >> 16;
+    public static byte getRed(int rgb) {
+        return (byte) ((rgb & RED_MASK) >> 16);
     }
 
-    public static int getGreen(int rgb) {
-        return (rgb & GREEN_MASK) >> 8;
+    public static byte getGreen(int rgb) {
+        return (byte) ((rgb & GREEN_MASK) >> 8);
     }
 
-    public static int getBlue(int rgb) {
-        return  (rgb & BLUE_MASK);
+    public static byte getBlue(int rgb) {
+        return (byte) (rgb & BLUE_MASK);
     }
 }
