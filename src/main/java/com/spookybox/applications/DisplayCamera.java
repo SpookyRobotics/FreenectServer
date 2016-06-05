@@ -3,6 +3,8 @@ package com.spookybox.applications;
 import com.spookybox.frameConsumers.ArffCreator;
 import com.spookybox.frameConsumers.ArffData;
 import com.spookybox.frameConsumers.Downscaler;
+import com.spookybox.frameConsumers.operations.ImageOperations;
+import com.spookybox.frameConsumers.operations.PanelOperations;
 import com.spookybox.freenect.DepthStreamCallback;
 import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.graphics.DisplayCanvas;
@@ -43,18 +45,18 @@ public class DisplayCamera extends DefaultInstance {
     }
 
     private void addDownscaleConsumer(){
-        int panelsPerRow = 100;
-        int numberOfRows = 100;
-        mConsumerThread.add(
-            new Downscaler(
-                    image -> {
-                        mAuxCanvas.setImage(image);
-                        mAuxCanvas.repaint();
-                    },
-                    panelsPerRow,
-                    numberOfRows
-            )
+        int panelsPerRow = 6;
+        int numberOfRows = 6;
+        Downscaler downscaler = new Downscaler(
+                image -> {
+                    mAuxCanvas.setImage(image);
+                    mAuxCanvas.repaint();
+                },
+                panelsPerRow,
+                numberOfRows
         );
+        downscaler.setInputPanelOperation(PanelOperations.averageRgbColor());
+        mConsumerThread.add(downscaler);
     }
     private void addArrfCreator() {
         mConsumerThread.add(new ArffCreator());
