@@ -67,11 +67,10 @@ public class RgbTransmitter extends TcpServer{
     }
 
     private String encodeAndEmptyRgb() {
-        KinectFrame[] framesToTransmit;
-        synchronized (mFramesToTransmit) {
-            framesToTransmit = (KinectFrame[]) mFramesToTransmit.toArray();
-            mFramesToTransmit.clear();
-        }
+        KinectFrame[] framesToTransmit = new KinectFrame[mFramesToTransmit.size()];
+        framesToTransmit = mFramesToTransmit.toArray(framesToTransmit);
+        mFramesToTransmit.clear();
+
         StringBuilder builder = new StringBuilder();
         for(int index = 0; index < framesToTransmit.length; index++){
             builder.append("testRGB").append(index).append("/END");

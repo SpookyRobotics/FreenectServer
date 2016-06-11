@@ -17,7 +17,6 @@ public class DepthTransmitter extends TcpServer{
     public Consumer<KinectFrame> getDepthConsumer(){
         return kinectFrame -> {
             if(mFramesToTransmit.size() > MAX_QUEUE_SIZE){
-                //System.out.println("Dropping depth transmit buffer");
                 mFramesToTransmit.clear();
             }
             mFramesToTransmit.add(kinectFrame);
@@ -63,7 +62,8 @@ public class DepthTransmitter extends TcpServer{
     }
 
     private String encodeAndEmptyDepth() {
-        KinectFrame[] framesToTransmit = (KinectFrame[]) mFramesToTransmit.toArray();
+        KinectFrame[] framesToTransmit = new KinectFrame[mFramesToTransmit.size()];
+        framesToTransmit = mFramesToTransmit.toArray(framesToTransmit);
         mFramesToTransmit.clear();
         StringBuilder builder = new StringBuilder();
         for(int index = 0; index < framesToTransmit.length; index++){
