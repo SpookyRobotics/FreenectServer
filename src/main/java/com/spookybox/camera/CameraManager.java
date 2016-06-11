@@ -22,7 +22,8 @@ public class CameraManager {
     private Optional<Thread> mRgbThread = Optional.empty();
     private Optional<Thread> mConsumerThread = Optional.empty();
     private List<Runnable> mOnStartListeners = new ArrayList<>();
-
+    private final List<Consumer<KinectFrame>> mDepthConsumers = new ArrayList<>();
+    private final List<Consumer<KinectFrame>> mRgbConsumers = new ArrayList<>();
 
     public CameraManager(Device kinect){
         if(kinect == null){
@@ -37,15 +38,23 @@ public class CameraManager {
         mTiltManager.moveAndWait(degrees);
     }
 
-    public void startCapture(Consumer<KinectFrame> rgbReceiver, Consumer<KinectFrame> depthReceiver){
+    public void addDepthConsumer(Consumer<KinectFrame> consumer){
+        mDepthConsumers.add(consumer);
+    }
+
+    public void addRgbConsumer(Consumer<KinectFrame> consumer){
+        mRgbConsumers.add(consumer);
+    }
+
+    public void startCapture(){
         isTerminating = false;
-        startDepthCapture(depthReceiver);
-        startRgbCapture(rgbReceiver);
+        startDepthCapture();
+        startRgbCapture();
         mOnStartListeners.forEach(Runnable::run);
         mOnStartListeners.clear();
     }
 
-    private void startRgbCapture(final Consumer<KinectFrame> callback) {
+    private void startRgbCapture() {
         Object awaitStart = new Object();
         mKinect.setVideoFormat(VideoFormat.RGB, Resolution.MEDIUM);
         mRgbThread = Optional.of(new Thread(() -> {
@@ -53,7 +62,9 @@ public class CameraManager {
                 if(isTerminating || frame == null){
                     return;
                 }
-                callback.accept(new KinectFrame(false, mode, frame, timestamp));
+                for (Consumer<KinectFrame> rgbConsumer : mRgbConsumers) {
+                    rgbConsumer.accept(new KinectFrame(false, mode, frame, timestamp));
+                }
             };
             while(!(mKinect.startVideo(receiver) == 0)){
                 System.out.println("Restarting depth");
@@ -65,7 +76,7 @@ public class CameraManager {
         waitOnObject(awaitStart);
     }
 
-    private void startDepthCapture(final Consumer<KinectFrame> depthConsumer) {
+    private void startDepthCapture() {
         Object awaitStart = new Object();
         mKinect.setDepthFormat(DepthFormat.D11BIT);
         mDepthThread = Optional.of(new Thread(() -> {
@@ -73,7 +84,10 @@ public class CameraManager {
                 if(isTerminating || frame == null){
                     return;
                 }
-                depthConsumer.accept(new KinectFrame(true, mode, frame, timestamp));
+                for (Consumer<KinectFrame> depthConsumer : mDepthConsumers) {
+                    depthConsumer.accept(new KinectFrame(true, mode, frame, timestamp));
+                }
+
             };
             while(!(mKinect.startDepth(receiver) == 0)){
                 System.out.println("Restarting depth");

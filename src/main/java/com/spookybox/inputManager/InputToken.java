@@ -1,22 +1,28 @@
 package com.spookybox.inputManager;
 
 enum InputToken {
-    BUTTON_A,
-    BUTTON_B,
-    EXIT,
-    UNKNOWN;
+    BUTTON_A("a"),
+    BUTTON_B("b"),
+    EXIT("exit"),
+    UNKNOWN(null);
+
+    private final String charSequence;
+
+    InputToken(String sequence) {
+        charSequence = sequence;
+    }
 
     public static InputToken toValue(String line) {
-        if (line == null || line.length() != 1) {
+        if (line == null ) {
             return UNKNOWN;
         }
-        if ("a".equals(line)) {
+        if (BUTTON_A.charSequence.equals(line)) {
             return BUTTON_A;
         }
-        if ("b".equals(line)) {
+        if (BUTTON_B.charSequence.equals(line)) {
             return BUTTON_B;
         }
-        if ("e".equals(line)) {
+        if (EXIT.charSequence.equals(line)) {
             return EXIT;
         }
         return UNKNOWN;

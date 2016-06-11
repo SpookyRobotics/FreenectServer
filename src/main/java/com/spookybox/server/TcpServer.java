@@ -1,67 +1,46 @@
 package com.spookybox.server;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Optional;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-public class TcpServer {
-    private final int mPortNumber;
-    private final ServerSocket mSocket;
-    private final String mServerName;
-    private final Consumer<TcpServer> mListener;
-    private Optional<Socket> mClientSocket = Optional.empty();
+public abstract class TcpServer {
+    private static final int BACKLOG_QUEUE = 2;
+    private static final int SHUDOWN_TASK_COMPLETION_DELAY_SECONDS = 0;
+    private final HttpServer server;
 
-    private final Thread serverThread = new Thread(new java.lang.Runnable() {
-        @Override
-        public void run() {
-            try {
-                while(true) {
-                    System.out.println(mServerName + " Waiting for client");
-                    Socket clientSocket = mSocket.accept();
-                    System.out.println(mServerName + " Client connected");
-                    mClientSocket = Optional.of(clientSocket);
-                    mListener.accept(TcpServer.this);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    public TcpServer() {
+        try {
+            server = HttpServer.create(new InetSocketAddress(getPort()), BACKLOG_QUEUE);
+        } catch (IOException e) {
+            throw new IllegalAccessError(e.toString());
         }
-    });
-
-    public TcpServer(final String serverName,
-                     final int port,
-                     final Consumer<TcpServer> listener) throws IOException {
-        mPortNumber = port;
-        mSocket = new ServerSocket(mPortNumber);
-        mListener = listener;
-        mServerName = serverName;
+        server.setExecutor(Executors.newSingleThreadExecutor());
+        for(ContextHandler c : getHandlers()){
+            server.createContext(c.getContext(), c.getHandler());
+        }
     }
 
-    public boolean isConnected(){
-        return mClientSocket.isPresent();
-    }
+    protected abstract int getPort();
+    protected abstract List<ContextHandler> getHandlers();
 
     public void start(){
-        serverThread.start();
+        System.out.println("Starting server " + getName());
+        server.start();
     }
 
-    public void transmit(int[] buffer,int offset,int bytesToWrite){
-        if(isConnected()){
-            mClientSocket.ifPresent((client) -> {
-                try {
-                    BufferedOutputStream output = new BufferedOutputStream(client.getOutputStream(), 25344);
-                    for (int index = offset; index < offset + bytesToWrite; index++) {
-                        output.write(buffer[index]);
-                    }
-                } catch (IOException e){
-                    e.printStackTrace();
-                }
-            });
-        }
+    protected String getName(){
+        return getClass().getName();
+    }
+
+    public void stop() {
+        server.stop(SHUDOWN_TASK_COMPLETION_DELAY_SECONDS);
     }
 }

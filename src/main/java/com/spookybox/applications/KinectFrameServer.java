@@ -37,7 +37,7 @@ public class KinectFrameServer extends KinectFrameConsumer<List<Byte>> {
 
     @Override
     public void start() {
-        mServer = new ServerMain(mCameraManager, getRgbServerDescription(), getDepthServerDescription());
+        mServer = new ServerMain(mCameraManager);
 
     }
 
@@ -58,19 +58,6 @@ public class KinectFrameServer extends KinectFrameConsumer<List<Byte>> {
 
     private boolean shutdownServers() {
         return mShutdownServers;
-    }
-
-
-    private ServerDescription getDepthServerDescription() {
-        return new ServerDescription("depthServer", 4041, tcpServer -> {
-            mDepthServer = Optional.of(tcpServer);
-        });
-    }
-
-    private ServerDescription getRgbServerDescription() {
-        return new ServerDescription("rgbServer", 4040, tcpServer -> {
-            mRgbServer = Optional.of(tcpServer);
-        });
     }
 
     @Override

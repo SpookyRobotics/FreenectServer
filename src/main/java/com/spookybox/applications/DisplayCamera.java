@@ -10,6 +10,7 @@ import com.spookybox.graphics.ByteBufferToImage;
 import com.spookybox.graphics.DisplayCanvas;
 import com.spookybox.camera.KinectFrame;
 import com.spookybox.inputManager.ConsoleInput;
+import com.spookybox.server.ServerMain;
 
 import java.awt.image.*;
 import java.nio.ByteBuffer;
@@ -24,6 +25,7 @@ public class DisplayCamera extends DefaultInstance {
     private DisplayCanvas mDepthCanvas;
     private DepthStreamCallback mDepthStreamCallback;
     private DisplayCanvas mAuxCanvas;
+    private ServerMain mServer;
 
     public DisplayCamera(){
         mDepthStreamCallback = new DepthStreamCallback();
@@ -37,7 +39,10 @@ public class DisplayCamera extends DefaultInstance {
         mDepthCanvas = canvases[1];
         mAuxCanvas = canvases[2];
         addDownscaleConsumer();
-        mCameraManager.startCapture(displayRgbImage(), displayDepthImage());
+        mCameraManager.addDepthConsumer(displayDepthImage());
+        mCameraManager.addRgbConsumer(displayRgbImage());
+        mServer = new ServerMain(mCameraManager);
+        mCameraManager.startCapture();
         ConsoleInput input = new ConsoleInput();
         input.setOnButtonA(() -> mCameraManager.setTilt(mCameraManager.getTilt() + 10));
         input.setOnButtonB(() -> mCameraManager.setTilt(mCameraManager.getTilt() - 10));
@@ -58,6 +63,7 @@ public class DisplayCamera extends DefaultInstance {
         downscaler.setInputPanelOperation(PanelOperations.averageRgbColor());
         mConsumerThread.add(downscaler);
     }
+    
     private void addArrfCreator() {
         mConsumerThread.add(new ArffCreator());
     }
