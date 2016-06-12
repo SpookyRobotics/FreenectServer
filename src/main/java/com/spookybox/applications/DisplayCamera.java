@@ -2,6 +2,7 @@ package com.spookybox.applications;
 
 import com.spookybox.frameConsumers.ArffCreator;
 import com.spookybox.frameConsumers.ArffData;
+import com.spookybox.frameConsumers.DownscaledImage;
 import com.spookybox.frameConsumers.Downscaler;
 import com.spookybox.frameConsumers.operations.ImageOperations;
 import com.spookybox.frameConsumers.operations.PanelOperations;
@@ -15,6 +16,7 @@ import com.spookybox.server.ServerMain;
 import java.awt.image.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static com.spookybox.graphics.ByteBufferToImage.SCREEN_RESOLUTION;
@@ -26,6 +28,7 @@ public class DisplayCamera extends DefaultInstance {
     private DepthStreamCallback mDepthStreamCallback;
     private DisplayCanvas mAuxCanvas;
     private ServerMain mServer;
+    private List<Consumer<DownscaledImage>> mDownScaleConsumers = new ArrayList<>();
 
     public DisplayCamera(){
         mDepthStreamCallback = new DepthStreamCallback();
@@ -42,6 +45,7 @@ public class DisplayCamera extends DefaultInstance {
         mCameraManager.addDepthConsumer(displayDepthImage());
         mCameraManager.addRgbConsumer(displayRgbImage());
         mServer = new ServerMain(mCameraManager);
+        mDownScaleConsumers.add(mServer.getDownScaleConsumer());
         mCameraManager.startCapture();
         ConsoleInput input = new ConsoleInput();
         input.setOnButtonA(() -> mCameraManager.setTilt(mCameraManager.getTilt() + 10));
@@ -56,6 +60,9 @@ public class DisplayCamera extends DefaultInstance {
                 image -> {
                     mAuxCanvas.setImage(image);
                     mAuxCanvas.repaint();
+                    for(Consumer<DownscaledImage> c : mDownScaleConsumers){
+                        c.accept(new DownscaledImage(image, panelsPerRow, numberOfRows));
+                    }
                 },
                 panelsPerRow,
                 numberOfRows

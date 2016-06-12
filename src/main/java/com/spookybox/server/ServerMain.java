@@ -1,9 +1,11 @@
 package com.spookybox.server;
 
 import com.spookybox.camera.CameraManager;
+import com.spookybox.frameConsumers.DownscaledImage;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class ServerMain {
     private RgbTransmitter mRgbServer;
@@ -14,8 +16,6 @@ public class ServerMain {
         mCameraManager = cameraManager;
         mRgbServer = new RgbTransmitter();
         mDepthServer = new DepthTransmitter();
-        mCameraManager.addRgbConsumer(mRgbServer.getRgbConsumer());
-        mCameraManager.addDepthConsumer(mDepthServer.getDepthConsumer());
         mCameraManager.addOnStartListener(() -> {
             try {
               start();
@@ -28,5 +28,9 @@ public class ServerMain {
     public void start() throws IOException {
         mRgbServer.start();
         mDepthServer.start();
+    }
+
+    public Consumer<DownscaledImage> getDownScaleConsumer() {
+        return mDepthServer.getDownScaleConsumer();
     }
 }
