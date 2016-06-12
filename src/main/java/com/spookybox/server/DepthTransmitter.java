@@ -68,9 +68,14 @@ public class DepthTransmitter extends TcpServer{
                     .append(rgbMatrix[0].length)
                     .append(":");
             for(int yIndex = 0; yIndex < rgbMatrix.length; yIndex++){
-                for(int xIndex=0; xIndex < rgbMatrix[yIndex].length; xIndex++){
-                    builder.append(rgbMatrix[yIndex][xIndex]);
+                if(yIndex != 0){
                     builder.append(":");
+                }
+                for(int xIndex=0; xIndex < rgbMatrix[yIndex].length; xIndex++){
+                    builder.append(Integer.toHexString(rgbMatrix[yIndex][xIndex]));
+                    if(!(xIndex +1 == rgbMatrix[yIndex].length)){
+                        builder.append(":");
+                    }
                 }
             }
             builder.append("/END");
