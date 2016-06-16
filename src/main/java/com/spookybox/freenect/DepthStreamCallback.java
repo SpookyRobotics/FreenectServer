@@ -7,7 +7,8 @@ public class DepthStreamCallback {
     private static final ByteBuffer mGammaBuffer;
 
     static {
-        System.loadLibrary("freenectDepth");
+        System.load("/Users/jonathanjohnson/Desktop/spookyBox/libs/libfreenectDepth.so");
+        //System.loadLibrary("freenectDepth");
         mGammaBuffer = ByteBuffer.allocateDirect(2048 * SIZE_OF_SHORT);
         initGammaArray(mGammaBuffer);
     }

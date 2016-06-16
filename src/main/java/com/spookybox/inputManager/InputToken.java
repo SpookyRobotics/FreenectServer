@@ -16,13 +16,13 @@ enum InputToken {
         if (line == null ) {
             return UNKNOWN;
         }
-        if (BUTTON_A.charSequence.equals(line)) {
+        if (BUTTON_A.charSequence.equals(line.toLowerCase())) {
             return BUTTON_A;
         }
-        if (BUTTON_B.charSequence.equals(line)) {
+        if (BUTTON_B.charSequence.equals(line.toLowerCase())) {
             return BUTTON_B;
         }
-        if (EXIT.charSequence.equals(line)) {
+        if (EXIT.charSequence.equals(line.toLowerCase())) {
             return EXIT;
         }
         return UNKNOWN;

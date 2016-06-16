@@ -54,8 +54,8 @@ public class DisplayCamera extends DefaultInstance {
     }
 
     private void addDownscaleConsumer(){
-        int panelsPerRow = 6;
-        int numberOfRows = 6;
+        int panelsPerRow = 10;
+        int numberOfRows = 10;
         Downscaler downscaler = new Downscaler(
                 image -> {
                     mAuxCanvas.setImage(image);

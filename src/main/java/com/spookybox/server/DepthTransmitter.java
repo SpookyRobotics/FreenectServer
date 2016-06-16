@@ -1,9 +1,9 @@
 package com.spookybox.server;
 
-import com.spookybox.camera.CameraManager;
-import com.spookybox.camera.KinectFrame;
 import com.spookybox.frameConsumers.DownscaledImage;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.awt.image.BufferedImage;
 import java.io.OutputStream;
@@ -13,8 +13,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 public class DepthTransmitter extends TcpServer{
-    private final int MAX_QUEUE_SIZE = 60;
+    private static final String PAGE = "PAGE";
+    private static final String DATA = "DATA";
+    private final int MIN_TRANSMIT_SIZE = 60;
+    private int mTransmitNumber = 0;
     private ConcurrentLinkedQueue<int[][]> mFramesToTransmit = new ConcurrentLinkedQueue<>();
+    private String mStringToTransmit;
+
+    public DepthTransmitter(){
+        mStringToTransmit = getTransmitData();
+    }
 
     @Override
     protected int getPort() {
@@ -38,7 +46,7 @@ public class DepthTransmitter extends TcpServer{
             @Override
             HttpHandler getHandler() {
                 return httpExchange -> {
-                    String transmit = getTransmitData();
+                    String transmit = mStringToTransmit;
                     httpExchange.sendResponseHeaders(200, transmit.getBytes().length);
                     OutputStream outputStream = httpExchange.getResponseBody();
                     outputStream.write(transmit.getBytes());
@@ -49,38 +57,42 @@ public class DepthTransmitter extends TcpServer{
     }
 
     private synchronized String getTransmitData() {
-        if(mFramesToTransmit.isEmpty()){
-            return "none";
+        if(mFramesToTransmit.isEmpty() || mFramesToTransmit.size() < MIN_TRANSMIT_SIZE){
+            return new JSONObject().toString();
         }
-        return encodeAndEmptyDepth();
+        return encodeTransmitData();
     }
 
-    private String encodeAndEmptyDepth() {
-        int[][][] framesToTransmit = new int[mFramesToTransmit.size()][][];
+    private String encodeTransmitData() {
+        int[][][] framesToTransmit = new int[0][0][0];
         framesToTransmit = mFramesToTransmit.toArray(framesToTransmit);
-        mFramesToTransmit.clear();
-        StringBuilder builder = new StringBuilder();
-        for(int index = 0; index < framesToTransmit.length; index++){
-            int[][] rgbMatrix = framesToTransmit[index];
-            builder.append("testDEPTH:Height")
-                    .append(rgbMatrix.length)
-                    .append(":Width")
-                    .append(rgbMatrix[0].length)
-                    .append(":");
+        String [][][] hexResult = new String[framesToTransmit.length][][];
+        for(int frameIndex = 0; frameIndex < framesToTransmit.length; frameIndex++){
+            int[][] rgbMatrix = framesToTransmit[frameIndex];
+            String[][] outputMatrix = new String[rgbMatrix.length][];
+            hexResult[frameIndex] = outputMatrix;
             for(int yIndex = 0; yIndex < rgbMatrix.length; yIndex++){
-                if(yIndex != 0){
-                    builder.append(":");
-                }
-                for(int xIndex=0; xIndex < rgbMatrix[yIndex].length; xIndex++){
-                    builder.append(Integer.toHexString(rgbMatrix[yIndex][xIndex]));
-                    if(!(xIndex +1 == rgbMatrix[yIndex].length)){
-                        builder.append(":");
-                    }
+                int[] rgbRow = rgbMatrix[yIndex];
+                String[] hexRow = new String[rgbRow.length];
+                outputMatrix[yIndex] = hexRow;
+                for( int xIndex = 0; xIndex < rgbRow.length; xIndex++){
+                    hexRow[xIndex] = Integer.toHexString(rgbRow[xIndex]);
                 }
             }
-            builder.append("/END");
         }
-        return builder.toString();
+
+        JSONObject out = new JSONObject();
+        out.put(PAGE, mTransmitNumber);
+        out.put(DATA, new JSONArray(hexResult));
+        return out.toString();
+    }
+
+    private void removeLowerTransmitSize(){
+        for(int index = 0; index < MIN_TRANSMIT_SIZE; index++){
+            mFramesToTransmit.remove();
+        }
+        mTransmitNumber++;
+
     }
 
     public Consumer<DownscaledImage> getDownScaleConsumer() {
@@ -94,8 +106,9 @@ public class DepthTransmitter extends TcpServer{
                     rgbMatrix[yIndex][xIndex] = image.getRGB(xIndex * xOffset, yIndex * yOffset);
                 }
             }
-            if(mFramesToTransmit.size() > MAX_QUEUE_SIZE){
-                mFramesToTransmit.clear();
+            if(mFramesToTransmit.size() > MIN_TRANSMIT_SIZE *2){
+                removeLowerTransmitSize();
+                mStringToTransmit = getTransmitData();
             }
             mFramesToTransmit.add(rgbMatrix);
         };
