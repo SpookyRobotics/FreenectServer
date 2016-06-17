@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 public class DepthTransmitter extends TcpServer{
     private static final String PAGE = "PAGE";
     private static final String DATA = "DATA";
-    private final int MIN_TRANSMIT_SIZE = 60;
+    private final int MIN_TRANSMIT_SIZE = 15;
     private int mTransmitNumber = 0;
     private ConcurrentLinkedQueue<int[][]> mFramesToTransmit = new ConcurrentLinkedQueue<>();
     private String mStringToTransmit;
