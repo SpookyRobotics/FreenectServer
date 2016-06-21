@@ -28,6 +28,17 @@ public class Downscaler extends KinectFrameConsumer<BufferedImage> {
         };
     }
 
+    public void setInputPanelOperations(final Function<InputPanel, InputPanel>... operations){
+        mPanelOperation = Optional.of(
+            inputPanel -> {
+                InputPanel result = inputPanel;
+                for(Function<InputPanel,InputPanel> f : operations){
+                    result = f.apply(result);
+                }
+                return result;
+            }
+        );
+    }
     public void setInputPanelOperation(Function<InputPanel, InputPanel> panelOperation){
         mPanelOperation = Optional.ofNullable(panelOperation);
     }
