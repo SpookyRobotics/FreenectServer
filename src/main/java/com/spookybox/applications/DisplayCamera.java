@@ -54,18 +54,18 @@ public class DisplayCamera extends DefaultInstance {
     }
 
     private void addDownscaleConsumer(){
-        int panelsPerRow = 10;
-        int numberOfRows = 10;
+        int panelsPerRow = 20;
+        int numberOfRows = 20;
         Downscaler downscaler = new Downscaler(
-                image -> {
-                    mAuxCanvas.setImage(image);
-                    mAuxCanvas.repaint();
-                    for(Consumer<DownscaledImage> c : mDownScaleConsumers){
-                        c.accept(new DownscaledImage(image, panelsPerRow, numberOfRows));
-                    }
-                },
-                panelsPerRow,
-                numberOfRows
+            image -> {
+                mAuxCanvas.setImage(image);
+                mAuxCanvas.repaint();
+                for(Consumer<DownscaledImage> c : mDownScaleConsumers){
+                    c.accept(new DownscaledImage(image, panelsPerRow, numberOfRows));
+                }
+            },
+            panelsPerRow,
+            numberOfRows
         );
         downscaler.setInputPanelOperation(PanelOperations.yCbCrThreshold());
         mConsumerThread.add(downscaler);

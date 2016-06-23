@@ -48,9 +48,14 @@ public class PanelOperations {
             byte green = (byte) ((averageGreen / image.length) / 3);
             byte blue = (byte) ((averageBlue / image.length) / 3);
             YCbCr yCbCr = YCbCr.fromRgb(red,green,blue);
+            boolean displayed = false;
             for(int index = 0; index < image.length; index++){
-                if(yCbCr.Cb < yCbCr.Cr && yCbCr.Cb < -5){
-                    //System.out.println("Displaying: cb - "+yCbCr.Cb+"\t cr - "+yCbCr.Cr);
+                if(yCbCr.Cb < yCbCr.Cr && yCbCr.Cr > 0 && yCbCr.Cb < 0){
+                    if(!displayed) {
+                        displayed = true;
+                        System.out.println("Displaying: cb - " + yCbCr.Cb + "\t cr - " + yCbCr.Cr);
+                        System.out.flush();
+                    }
                     image[index] = 0xFF << 24 | red << 16 | green << 8 | blue;
                 } else {
                     image[index] = 0;
